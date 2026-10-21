@@ -1,5 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 import { getProgressSnapshot, getWeakAreas } from '../lib/progress'
+import type { QuizSession } from '../lib/progress'
+import { getCloudQuizSessions } from '../lib/cloudProgress'
 
 const domains = [
   {
@@ -29,10 +33,91 @@ const domains = [
 ]
 
 export default function Dashboard() {
-  const progress = getProgressSnapshot()
-  const recentSessions = progress.recentSessions
-  const weakAreas = getWeakAreas()
+  const navigate = useNavigate()
+  const [signingOut, setSigningOut] = useState(false)
+  const [signOutError, setSignOutError] = useState('')
+  const localProgress = getProgressSnapshot()
+  const [cloudSessions, setCloudSessions] = useState<QuizSession[]>([])
+  const [cloudMessage, setCloudMessage] = useState('Loading your cloud quiz history...')
   const [selectedSessionIndex, setSelectedSessionIndex] = useState<number | null>(null)
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    setSignOutError('')
+
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      setSignOutError('Unable to sign out. Please try again.')
+      setSigningOut(false)
+      return
+    }
+
+    navigate('/login', { replace: true })
+  }
+
+  useEffect(() => {
+    let isActive = true
+
+    async function loadCloudProgress() {
+      const result = await getCloudQuizSessions()
+      if (!isActive) return
+
+      if (result.error) {
+        setCloudMessage('Cloud history is unavailable right now. Showing progress saved on this device.')
+        return
+      }
+
+      setCloudSessions(result.sessions)
+      setCloudMessage(
+        result.sessions.length > 0
+          ? 'Your quiz history is synced from your account.'
+          : 'No cloud quiz history yet. Showing progress saved on this device.',
+      )
+    }
+
+    void loadCloudProgress()
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
+  const cloudProgress = cloudSessions.length > 0
+    ? (() => {
+        const domainResults: Record<string, { correct: number; total: number }> = {}
+        let questionsAnswered = 0
+        let correctAnswers = 0
+
+        for (const session of cloudSessions) {
+          questionsAnswered += session.totalQuestions
+          correctAnswers += session.correctAnswers
+
+          for (const [domain, result] of Object.entries(session.domainResults)) {
+            if (!domainResults[domain]) {
+              domainResults[domain] = { correct: 0, total: 0 }
+            }
+            domainResults[domain].correct += result.correct
+            domainResults[domain].total += result.total
+          }
+        }
+
+        return {
+          quizzesCompleted: cloudSessions.length,
+          questionsAnswered,
+          correctAnswers,
+          averageScorePercent: Math.round(
+            cloudSessions.reduce((total, session) => total + session.scorePercent, 0) / cloudSessions.length,
+          ),
+          domainResults,
+          recentSessions: cloudSessions.slice(0, 5),
+        }
+      })()
+    : null
+
+  const progress = cloudProgress ?? localProgress
+  const recentSessions = cloudProgress?.recentSessions ?? localProgress.recentSessions
+  const weakAreas = getWeakAreas()
   const selectedSession = selectedSessionIndex === null
     ? null
     : recentSessions[selectedSessionIndex]
@@ -113,10 +198,26 @@ export default function Dashboard() {
             <p className="text-sm text-slate-500">Your workspace</p>
             <h1 className="mt-1 text-xl font-bold sm:text-2xl">Dashboard</h1>
           </div>
-          <a href="/settings" className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-slate-50 font-semibold text-blue-700" aria-label="Settings">
-            ⚙
-          </a>
+          <div className="flex items-center gap-3">
+            <a href="/settings" className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-slate-50 font-semibold text-blue-700" aria-label="Settings">
+              ⚙
+            </a>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {signingOut ? 'Signing out...' : 'Sign out'}
+            </button>
+          </div>
         </header>
+
+        {signOutError && (
+          <p role="alert" className="mx-5 mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 sm:mx-8">
+            {signOutError}
+          </p>
+        )}
 
         <div className="mx-auto max-w-7xl space-y-8 px-5 py-8 sm:px-8 sm:py-10">
           <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-600 p-7 text-white shadow-xl shadow-blue-950/10 sm:p-10">
@@ -146,7 +247,10 @@ export default function Dashboard() {
             <div className="mb-5">
               <h2 id="overview-heading" className="text-xl font-bold">Your study overview</h2>
               <p className="mt-1 text-sm text-slate-500">
-                Progress from completed practice quizzes appears here. Demo progress resets when you refresh the page.
+                Progress from completed practice quizzes appears here.
+              </p>
+              <p className="mt-2 text-xs text-slate-500" role="status" aria-live="polite">
+                {cloudMessage}
               </p>
             </div>
 

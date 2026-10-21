@@ -1,6 +1,7 @@
 
 import { useState } from 'react'
 import { getIncorrectQuestions, recordQuizSession } from '../lib/progress'
+import { saveQuizSessionToCloud } from '../lib/cloudProgress'
 
 type AnswerOption = {
   id: string
@@ -398,6 +399,7 @@ export default function Quiz() {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [finished, setFinished] = useState(false)
   const [reviewing, setReviewing] = useState(false)
+  const [cloudSaveMessage, setCloudSaveMessage] = useState('')
 
   const currentQuestion = questions[currentIndex]
   const selectedAnswer = currentQuestion ? answers[currentQuestion.id] : undefined
@@ -436,7 +438,7 @@ export default function Quiz() {
       }
     }
 
-    recordQuizSession({
+    const session = {
       completedAt: new Date().toISOString(),
       correctAnswers: score,
       totalQuestions: questions.length,
@@ -450,9 +452,20 @@ export default function Quiz() {
         correctAnswer: question.correctAnswer,
         selectedAnswer: answers[question.id] ?? null,
       })),
-    })
+    }
 
+    // Keep local progress working even if cloud saving is unavailable.
+    recordQuizSession(session)
     setFinished(true)
+    setCloudSaveMessage('Saving your results to your account...')
+
+    void saveQuizSessionToCloud(session).then(({ error }) => {
+      setCloudSaveMessage(
+        error
+          ? `Your result is saved on this device, but cloud saving failed: ${error}`
+          : 'Your results have been saved to your account.',
+      )
+    })
   }
 
   function restartQuiz() {
@@ -603,9 +616,8 @@ export default function Quiz() {
             </div>
           </div>
 
-          <p className="mt-6 text-sm leading-6 text-slate-500">
-            This score belongs to your current local practice session. Results
-            are not saved to an account yet.
+          <p className="mt-6 text-sm leading-6 text-slate-500" role="status" aria-live="polite">
+            {cloudSaveMessage || 'Your result is saved on this device. Cloud save status will appear here.'}
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">

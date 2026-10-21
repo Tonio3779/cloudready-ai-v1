@@ -1,8 +1,10 @@
-
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import Learn from './pages/Learn'
 import Quiz from './pages/Quiz'
+import Login from './pages/Login'
+import ResetPassword from './pages/ResetPassword'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function Home() {
   return (
@@ -26,12 +28,21 @@ function Home() {
           practice questions, and explanations that help concepts make sense.
         </p>
 
-        <a
-          href="/dashboard"
-          className="mt-8 inline-flex rounded-xl bg-blue-600 px-6 py-4 font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
-        >
-          Explore your dashboard →
-        </a>
+        <div className="mt-8 flex flex-wrap gap-4">
+          <a
+            href="/dashboard"
+            className="inline-flex rounded-xl bg-blue-600 px-6 py-4 font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
+          >
+            Explore your dashboard →
+          </a>
+
+          <a
+            href="/login"
+            className="inline-flex rounded-xl border border-slate-300 bg-white px-6 py-4 font-semibold text-blue-950 transition hover:bg-slate-100"
+          >
+            Sign in / Create account
+          </a>
+        </div>
 
         <p className="mt-12 max-w-2xl text-sm leading-6 text-slate-500">
           CloudReady AI is an independent study tool and is not affiliated with
@@ -67,13 +78,67 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/learn" element={<Learn />} />
-        <Route path="/quiz" element={<Quiz />} />
-        <Route path="/results" element={<PlaceholderPage title="Quiz results" />} />
-        <Route path="/review" element={<PlaceholderPage title="Review mistakes" />} />
-        <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
-        <Route path="*" element={<PlaceholderPage title="Page not found" />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/learn"
+          element={
+            <ProtectedRoute>
+              <Learn />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/quiz"
+          element={
+            <ProtectedRoute>
+              <Quiz />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/results"
+          element={
+            <ProtectedRoute>
+              <PlaceholderPage title="Quiz results" />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/review"
+          element={
+            <ProtectedRoute>
+              <PlaceholderPage title="Review mistakes" />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <PlaceholderPage title="Settings" />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="*"
+          element={<PlaceholderPage title="Page not found" />}
+        />
       </Routes>
     </BrowserRouter>
   )
