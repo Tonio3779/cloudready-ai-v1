@@ -4,6 +4,7 @@ import Learn from './pages/Learn'
 import Quiz from './pages/Quiz'
 import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
+import Review from './pages/Review'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function Home() {
@@ -121,7 +122,7 @@ function App() {
           path="/review"
           element={
             <ProtectedRoute>
-              <PlaceholderPage title="Review mistakes" />
+              <Review />
             </ProtectedRoute>
           }
         />
