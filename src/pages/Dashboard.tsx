@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { getProgressSnapshot, getWeakAreas } from '../lib/progress'
+import { getProgressSnapshot } from '../lib/progress'
 import type { QuizSession } from '../lib/progress'
 import { getCloudQuizSessions } from '../lib/cloudProgress'
 
@@ -38,6 +38,8 @@ export default function Dashboard() {
   const [signOutError, setSignOutError] = useState('')
   const localProgress = getProgressSnapshot()
   const [cloudSessions, setCloudSessions] = useState<QuizSession[]>([])
+  const [cloudLoaded, setCloudLoaded] = useState(false)
+  const [cloudAvailable, setCloudAvailable] = useState(false)
   const [cloudMessage, setCloudMessage] = useState('Loading your cloud quiz history...')
   const [selectedSessionIndex, setSelectedSessionIndex] = useState<number | null>(null)
 
@@ -64,10 +66,14 @@ export default function Dashboard() {
       if (!isActive) return
 
       if (result.error) {
+        setCloudAvailable(false)
+        setCloudLoaded(true)
         setCloudMessage('Cloud history is unavailable right now. Showing progress saved on this device.')
         return
       }
 
+      setCloudAvailable(true)
+      setCloudLoaded(true)
       setCloudSessions(result.sessions)
       setCloudMessage(
         result.sessions.length > 0
@@ -83,41 +89,78 @@ export default function Dashboard() {
     }
   }, [])
 
-  const cloudProgress = cloudSessions.length > 0
-    ? (() => {
-        const domainResults: Record<string, { correct: number; total: number }> = {}
-        let questionsAnswered = 0
-        let correctAnswers = 0
+  const cloudProgress = (() => {
+    const domainResults: Record<string, { correct: number; total: number }> = {}
+    let questionsAnswered = 0
+    let correctAnswers = 0
 
-        for (const session of cloudSessions) {
-          questionsAnswered += session.totalQuestions
-          correctAnswers += session.correctAnswers
+    for (const session of cloudSessions) {
+      questionsAnswered += session.totalQuestions
+      correctAnswers += session.correctAnswers
 
-          for (const [domain, result] of Object.entries(session.domainResults)) {
-            if (!domainResults[domain]) {
-              domainResults[domain] = { correct: 0, total: 0 }
-            }
-            domainResults[domain].correct += result.correct
-            domainResults[domain].total += result.total
-          }
+      for (const [domain, result] of Object.entries(session.domainResults)) {
+        if (!domainResults[domain]) {
+          domainResults[domain] = { correct: 0, total: 0 }
         }
+        domainResults[domain].correct += result.correct
+        domainResults[domain].total += result.total
+      }
+    }
 
-        return {
-          quizzesCompleted: cloudSessions.length,
-          questionsAnswered,
-          correctAnswers,
-          averageScorePercent: Math.round(
-            cloudSessions.reduce((total, session) => total + session.scorePercent, 0) / cloudSessions.length,
-          ),
-          domainResults,
-          recentSessions: cloudSessions.slice(0, 5),
-        }
-      })()
-    : null
+    return {
+      quizzesCompleted: cloudSessions.length,
+      questionsAnswered,
+      correctAnswers,
+      averageScorePercent: cloudSessions.length
+        ? Math.round(
+            cloudSessions.reduce((total, session) => total + session.scorePercent, 0) /
+              cloudSessions.length,
+          )
+        : null,
+      domainResults,
+      recentSessions: cloudSessions.slice(0, 5),
+    }
+  })()
 
-  const progress = cloudProgress ?? localProgress
-  const recentSessions = cloudProgress?.recentSessions ?? localProgress.recentSessions
-  const weakAreas = getWeakAreas()
+  // A successful cloud response is authoritative, including when it contains
+  // zero sessions. Use local progress only if cloud history cannot be loaded.
+  const progress = cloudLoaded && cloudAvailable ? cloudProgress : localProgress
+  const recentSessions =
+    cloudLoaded && cloudAvailable ? cloudProgress.recentSessions : localProgress.recentSessions
+
+  const domainRecommendations: Record<string, string> = {
+    'Cloud concepts':
+      'Review cloud computing benefits, cloud models, shared responsibility, and IaaS, PaaS, and SaaS.',
+    'Azure architecture and services':
+      'Review Azure regions and availability zones, resource groups, core compute, networking, and storage services.',
+    'Azure management and governance':
+      'Review Azure Policy, RBAC, locks, cost management, compliance tools, and management options.',
+  }
+
+  const weakAreas = Object.entries(progress.domainResults)
+    .filter(([, result]) => result.total > 0)
+    .map(([domain, result]) => {
+      const accuracyPercent = Math.round((result.correct / result.total) * 100)
+      const status =
+        accuracyPercent < 60
+          ? 'Needs focus'
+          : accuracyPercent < 80
+            ? 'Keep practising'
+            : 'Strong'
+
+      return {
+        domain,
+        correct: result.correct,
+        total: result.total,
+        accuracyPercent,
+        status,
+        recommendation:
+          domainRecommendations[domain] ??
+          'Review the learning material for this domain and practise more questions.',
+      }
+    })
+    .sort((a, b) => a.accuracyPercent - b.accuracyPercent)
+
   const selectedSession = selectedSessionIndex === null
     ? null
     : recentSessions[selectedSessionIndex]
