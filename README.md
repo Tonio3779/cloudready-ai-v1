@@ -1,75 +1,104 @@
-# React + TypeScript + Vite
+# CloudReady AI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Smarter AZ-900 practice through topic-organized quizzes, instant feedback, and explanations.**
 
-Currently, two official plugins are available:
+CloudReady AI is a web-based exam-preparation prototype built for the hackathon theme **“Building Smarter Exam Prep Tools from Our Own Learning Journey.”** It addresses **Practice & Assessment — Smart Quiz Builder**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Problem
 
-## React Compiler
+Studying for a cloud certification can become passive and fragmented. Learners need to check whether they understand a concept, learn why an answer is correct, and know what to revisit after making a mistake. CloudReady AI focuses on the loop: **answer → feedback → explanation → review mistakes → track progress**.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+This is the product hypothesis motivating the prototype, not a claim that formal learner research has been conducted.
 
-## Expanding the ESLint configuration
+## Implemented features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- AZ-900 multiple-choice practice quiz.
+- Immediate feedback and answer explanations.
+- Questions/results organized by AZ-900 topic/domain.
+- Supabase authentication: sign-up, email confirmation, sign-in, and password recovery.
+- Dashboard for practice progress.
+- Cloud-saved quiz sessions for signed-in users.
+- Review page for questions most recently answered incorrectly or left unanswered.
+- Vercel deployment and GitHub source repository.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+**Scope note:** This is an independent study aid, not an official Microsoft product and not a guarantee of passing AZ-900. Verify question wording, answer keys, explanations, and topic mappings against Microsoft's current official AZ-900 study guide.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Target users
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+AZ-900 beginners, students, and career-switchers who want structured practice and understandable feedback.
 
+## Core learning loop
+
+1. Sign in.
+2. Start a practice quiz.
+3. Answer and read the explanation.
+4. Finish the quiz and inspect results.
+5. Use the dashboard to identify topics to revisit.
+6. Use Review to revisit missed or skipped questions.
+
+## Technology
+
+- Frontend: React, TypeScript, Vite
+- Authentication: Supabase Auth
+- Database and Cloud Persistence: Supabase Postgres
+- Data Security: Supabase Row Level Security (RLS)
+- Hosting and Deployment: Vercel
+- Version Control: Git and GitHub
+- GitHub version control
+
+## Run locally
+
+Requirements: Install Node.js and npm.
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Create `.env.local` in the project root:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```dotenv
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 ```
+
+Then run:
+
+```bash
+npm run dev
+npm run build
+```
+
+for starting development server and build for production respectively
+
+Never commit `.env.local` or include credential values in screenshots, issues, or documentation.
+
+## Deployment and authentication
+
+Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in Vercel Project Settings → Environment Variables. Set Supabase Site URL to the production domain and add the production domain to Redirect URLs. Verify that the quiz-session table has RLS enabled and policies limit each user to their own rows.
+
+`vercel.json` provides a rewrite so client-side routes such as `/dashboard` and `/review` can load directly or refresh correctly.
+
+## AI-assisted / vibe-coding workflow
+
+The app was built iteratively with AI assistance while access to hosted low-code builder credits was limited. The workflow emphasized small, testable changes: inspect existing code, update one feature, run the production build, manually test, then commit and push. See `docs/PROMPT_ENGINEERING.md` for reusable prompt patterns and the prompt-design approach. That document is not a verbatim transcript of every prompt used.
+
+## Limitations and next steps
+
+- Verify all questions and topic mappings against the current official exam objectives.
+- Expand and balance question coverage across the current domains.
+- Add automated tests for scoring, cloud persistence, and review filtering.
+- Test accessibility and mobile layouts.
+- Consider runtime AI question generation later; do not imply it exists unless implemented.
+
+## Links
+
+- Live prototype: https://cloudready-ai-v1.vercel.app
+- GitHub: https://github.com/Tonio3779/cloudready-ai-v1
+- Demo video: add the final public video URL.
+- Pitch deck: add the final public deck URL.
+
+## Disclaimer
+
+CloudReady AI is an independent hackathon prototype. It is not affiliated with or endorsed by Microsoft. Azure and Microsoft AZ-900 are Microsoft trademarks.
+
+The purpose of this project is to make exam practice more understandable, actionable, and accessible through feedback, explanations, and progress tracking.
