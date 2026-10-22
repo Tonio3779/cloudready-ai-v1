@@ -94,8 +94,8 @@ The app was built iteratively with AI assistance while access to hosted low-code
 
 - Live prototype: https://cloudready-ai-v1.vercel.app
 - GitHub: https://github.com/Tonio3779/cloudready-ai-v1
-- Demo video: add the final public video URL.
-- Pitch deck: add the final public deck URL.
+- Demo video: https://drive.google.com/file/d/1M-bbLzxTpyKx5oKCCIoduUV9T_g0rRF6/view?usp=drive_link
+- Pitch deck: https://canva.link/ixmifpzsshrztro
 
 ## Disclaimer
 
